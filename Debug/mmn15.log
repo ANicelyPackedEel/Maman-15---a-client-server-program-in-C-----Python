@@ -1,0 +1,8 @@
+﻿  Mmn15.cpp
+  Please define _WIN32_WINNT or _WIN32_WINDOWS appropriately. For example:
+  - add -D_WIN32_WINNT=0x0601 to the compiler command line; or
+  - add _WIN32_WINNT=0x0601 to your project's Preprocessor Definitions.
+  Assuming _WIN32_WINNT=0x0601 (i.e. Windows 7 target).
+C:\Users\Erel's PC\source\repos\mmn15\Mmn15.cpp(70,13): warning C4244: 'initializing': conversion from 'double' to 'size_t', possible loss of data
+C:\Users\Erel's PC\source\repos\mmn15\Mmn15.cpp(76,17): warning C4018: '>=': signed/unsigned mismatch
+  mmn15.vcxproj -> C:\Users\Erel's PC\source\repos\mmn15\Debug\mmn15.exe
