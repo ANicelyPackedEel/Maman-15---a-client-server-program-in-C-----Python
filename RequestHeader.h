@@ -15,13 +15,4 @@ public:
 	RequestHeader(uint8_t* clientID, uint8_t version, uint16_t code, uint32_t payloadSize);
 	uint16_t getCode() const;
 };
-
-//
-//union Serialize
-//{
-//	Request req;
-//	uint8_t* serialized;
-//	Serialize(const Request& r);
-//	~Serialize();
-//};
 #pragma pack(pop)

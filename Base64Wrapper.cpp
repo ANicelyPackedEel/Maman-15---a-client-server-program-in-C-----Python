@@ -2,12 +2,12 @@
 #include "Util.h"
 
 bool Base64Wrapper::isBase64Digit(const char c) {
-	return isdigit(c) || isalpha(c) || c == '+' || c == '/' || c == '=';
+	return isdigit(c) || isalpha(c) || c == '+' || c == '/' || c == '=' || c == '/';
 }
 
 size_t Base64Wrapper::lengthOfBytesInBase64(const size_t numOfBytes) {
 	std::string s(numOfBytes, '0');
-	return encode(s).length();
+	return encode(s).size();
 }
 
 std::string Base64Wrapper::encode(const std::string& str)

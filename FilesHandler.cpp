@@ -6,13 +6,19 @@
 
 std::string readFileIntoString(const std::string& filePath)
 {
-	std::ifstream inputFile;
-	inputFile.open(filePath, std::ios::in);
+	std::string ret;
+	std::ifstream inputFile(filePath, std::ios::binary);
 
 	if (inputFile.fail())
 		throw FatalException("Fatal error: Could'nt open file specified in transfer.info!");
 
-	return std::string((std::istreambuf_iterator<char>(inputFile)), std::istreambuf_iterator<char>());
+	inputFile.seekg(0, std::ios::end);
+	ret.reserve(inputFile.tellg());
+	inputFile.seekg(0, std::ios::beg);
+
+	ret.assign((std::istreambuf_iterator<char>(inputFile)),
+		std::istreambuf_iterator<char>());
+	return ret;
 }
 
 void createOrFixMeInfo(const std::string& userName, const std::vector<uint8_t> clientID, const std::string& privateKey)
@@ -46,6 +52,7 @@ bool isMeInfoFileValidAndRead(std::ifstream& file, std::string& userName, std::s
 	if (line.length() > MAX_NAME_LENGTH)
 		return false;
 
+
 	std::getline(file, line);
 	_id = line;
 
@@ -57,11 +64,10 @@ bool isMeInfoFileValidAndRead(std::ifstream& file, std::string& userName, std::s
 			return false;
 	}
 
+
 	std::getline(file, line);
 	_privateKey = line;
-	size_t privateKeySizeInBase64 = Base64Wrapper::lengthOfBytesInBase64(RSA_KEYS_LENGTH);
-	if (line.length() != privateKeySizeInBase64)
-		return false;
+
 
 	for (char& c : line)
 	{
@@ -69,7 +75,6 @@ bool isMeInfoFileValidAndRead(std::ifstream& file, std::string& userName, std::s
 		if (!Base64Wrapper::isBase64Digit(c))
 			return false;
 	}
-
 
 	size_t fEqualSignPos = line.find('=');
 	if (fEqualSignPos != std::string::npos)
@@ -81,120 +86,10 @@ bool isMeInfoFileValidAndRead(std::ifstream& file, std::string& userName, std::s
 			return false;
 	}
 
-
-	//TODO: somehow test if there are more lines (more lines with \n only);
-
 	userName = _userName;
 	id = _id;
 	privateKey = _privateKey;
 	return true;
-	/*
-	size_t delimPos = line.find_last_of(':');
-	if (delimPos == std::string::npos)
-		return false;
-
-	//std::cout << "Size_t overflow" << std::endl;
-
-	std::string _ip = line.substr(0, delimPos);
-	if (isAdditionOverflow(&delimPos, delimPos, 1)) return false;
-	std::string _port = line.substr(delimPos);
-
-	//std::cout << "Port invalid" << std::endl;
-
-	if (_port.length() > 5) //5 - max length of port //TODO test if null terminator is included in the length()
-		return false;
-	port = _port;
-	//std::cout << "IP invalid" << std::endl;
-
-	boost::system::error_code ec;
-	boost::asio::ip::address::from_string(_ip, ec);
-	if (ec)
-		return false;
-	ip = _ip;
-
-	//std::cout << "Name too long" << std::endl;
-
-	std::getline(file, line);
-	if (line.length() > MAX_NAME_LENGTH_TRANSER_FILE || line.empty())
-		return false;
-	userName = line;
-
-	//std::cout << "File path doesn't exists" << std::endl;
-
-	std::getline(file, line);
-	if (!std::filesystem::exists(line))
-		return false;
-	filePath = line;
-	//std::cout << "Too many lines" << std::endl;
-
-
-	//TODO somehow test if there are more lines (more lines with \n only
-
-	//std::cout << "SUCCESS\n";
-	return true;
-
-
-	/*if (!std::filesystem::exists(ME_INFO_FILE_PATH))
-		return false;
-	std::ifstream meInfo;
-	meInfo.open(ME_INFO_FILE_PATH, std::ios::in);
-
-	if (meInfo.fail())
-		throw FatalException(std::string("Fatal error: Could'nt open me.info file!"));
-
-	char ch;
-	std::array<char, MAX_NAME_LENGTH> name;
-	name.fill(0);
-
-	for (int i = 0; i < MAX_NAME_LENGTH; i++)
-	{
-		meInfo >> std::noskipws >> ch;
-		if (meInfo.eof())
-			return false;
-		if (ch == '\n') {
-			if (i == 0)
-				return false;
-			break;
-		}
-		if (i == MAX_NAME_LENGTH - 1) //if name is longer then 254 bytes + (last byte must be \0). hav'nt seen \n so name is longer.
-			return false;
-		name[i] = ch;
-	}
-
-	std::array<char, MAX_CLIENT_ID_LENGTH + 1> clientID;
-	clientID.fill(0);
-
-	for (int i = 0; i < MAX_CLIENT_ID_LENGTH + 1; i++)
-	{
-		meInfo >> std::noskipws >> ch;
-		if (meInfo.eof())
-			return false;
-		if (ch == '\n') {
-			if (i < MAX_CLIENT_ID_LENGTH)
-				return false;
-			break;
-		}
-		if (!isxdigit(ch))
-			return false;
-		if (i == MAX_CLIENT_ID_LENGTH) //if client id is longer then 16 bytes. hav'nt seen \n so client id is longer.
-			return false;
-		clientID[i] = ch;
-	}
-
-	size_t privateKeyIn64Size = Base64Wrapper::lengthOfBytesInBase64(RSA_KEYS_LENGTH);
-	std::vector<char> privateKey;
-	for (int i = 0; i < privateKeyIn64Size + 1; i++)
-	{
-		meInfo >> std::noskipws >> ch;
-		if (meInfo.eof())
-			break;
-		if (!Base64Wrapper::isBase64Digit(ch))
-			return false;
-		privateKey.emplace_back(ch);
-	}
-	if (privateKey.size() != privateKeyIn64Size)
-		return false;
-	*/
 }
 
 bool isTransferInfoFileValidAndRead(std::ifstream& file, std::string& ip, std::string& port, std::string& userName, std::string& filePath)
@@ -214,8 +109,7 @@ bool isTransferInfoFileValidAndRead(std::ifstream& file, std::string& ip, std::s
 	delimPos = res;
 	std::string _port = line.substr(delimPos);
 
-
-	if (_port.length() > 5) //5 - max length of port //TODO: test if null terminator is included in the length()
+	if (_port.length() > 5) //5 - max length of port
 		return false;
 
 	for (char& c : _port)
@@ -233,7 +127,6 @@ bool isTransferInfoFileValidAndRead(std::ifstream& file, std::string& ip, std::s
 	catch (...) { return false; }
 	port = _port;
 
-
 	boost::system::error_code ec;
 	boost::asio::ip::address::from_string(_ip, ec);
 	if (ec)
@@ -246,13 +139,11 @@ bool isTransferInfoFileValidAndRead(std::ifstream& file, std::string& ip, std::s
 		return false;
 	userName = line;
 
-
 	std::getline(file, line);
 	if (!std::filesystem::exists(line))
 		return false;
 	filePath = line;
 
-	//TODO somehow test if there are more lines (more lines with \n only 
 	return true;
 }
 
